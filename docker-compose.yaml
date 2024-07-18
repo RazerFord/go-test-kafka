@@ -2,6 +2,7 @@ version: '3.9'
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -27,6 +28,7 @@ services:
 
   init-kafka:
     image: confluentinc/cp-kafka:latest
+    container_name: init-kafka
     depends_on:
       - kafka
     entrypoint: [ '/bin/sh', '-c' ]
@@ -44,34 +46,35 @@ services:
       kafka-topics --bootstrap-server kafka:9092 --list
       "
 
-  # client:
-  #   build:
-  #     context: .
-  #     dockerfile: dockerfile.app
-  #     args:
-  #       APP_TYPE: "client"
-  #   depends_on:
-  #     - kafka
-  #     - init-kafka
-  #   entrypoint: [ '/bin/sh', '-c' ]
-  #   command: "docker ps"
-  #   environment:
-  #     - $TOPIC
-  #   ports:
-  #     - 8081:8081
+  client:
+    build:
+      context: .
+      dockerfile: dockerfile.app
+      args:
+        APP_TYPE: "client"
+    container_name: client
+    depends_on:
+      init-kafka:
+        condition: service_completed_successfully
+    environment:
+      - $TOPIC
+    ports:
+      - 8081:8081
 
-  # server:
-  #   build:
-  #     context: .
-  #     dockerfile: dockerfile.app
-  #     args:
-  #       APP_TYPE: "server"
-  #   depends_on:
-  #     - kafka
-  #     - init-kafka
-  #     - client
-  #   environment:
-  #     - $TOPIC
-  #   ports:
-  #     - 8082:8082
+  server:
+    build:
+      context: .
+      dockerfile: dockerfile.app
+      args:
+        APP_TYPE: "server"
+    container_name: server
+    depends_on:
+      init-kafka:
+        condition: service_completed_successfully
+      client:
+        condition: service_started
+    environment:
+      - $TOPIC
+    ports:
+      - 8082:8082
 
