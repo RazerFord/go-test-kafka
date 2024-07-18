@@ -32,38 +32,46 @@ services:
     entrypoint: [ '/bin/sh', '-c' ]
     command: |
       "
+      echo topic name $TOPIC
+      
       # blocks until kafka is reachable
       kafka-topics --bootstrap-server kafka:9092 --list
 
       echo -e 'Creating kafka topics'
-      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic test-topic --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic $TOPIC --replication-factor 1 --partitions 1
 
       echo -e 'Successfully created the following topics:'
       kafka-topics --bootstrap-server kafka:9092 --list
       "
 
-  client:
-    build:
-      context: .
-      dockerfile: dockerfile.app
-      args:
-        APP_TYPE: "client"
-    depends_on:
-      - kafka
-      - init-kafka
-    ports:
-      - 8081:8081
+  # client:
+  #   build:
+  #     context: .
+  #     dockerfile: dockerfile.app
+  #     args:
+  #       APP_TYPE: "client"
+  #   depends_on:
+  #     - kafka
+  #     - init-kafka
+  #   entrypoint: [ '/bin/sh', '-c' ]
+  #   command: "docker ps"
+  #   environment:
+  #     - $TOPIC
+  #   ports:
+  #     - 8081:8081
 
-  server:
-    build:
-      context: .
-      dockerfile: dockerfile.app
-      args:
-        APP_TYPE: "server"
-    depends_on:
-      - kafka
-      - init-kafka
-      - client
-    ports:
-      - 8082:8082
+  # server:
+  #   build:
+  #     context: .
+  #     dockerfile: dockerfile.app
+  #     args:
+  #       APP_TYPE: "server"
+  #   depends_on:
+  #     - kafka
+  #     - init-kafka
+  #     - client
+  #   environment:
+  #     - $TOPIC
+  #   ports:
+  #     - 8082:8082
 
