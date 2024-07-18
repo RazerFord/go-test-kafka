@@ -10,7 +10,7 @@ import (
 )
 
 const topic = "test-topic"
-const host = "kafka:9092"
+const host = "localhost:29092"
 
 func main() {
 	log.SetOutput(os.Stdout)
