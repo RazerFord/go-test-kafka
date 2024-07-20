@@ -13,7 +13,7 @@ type Arguments struct {
 }
 
 const (
-	address      = "localhost"
+	host      = "localhost"
 	port      = "29092"
 	topic     = "test-topic"
 	partition = 0
@@ -22,7 +22,7 @@ const (
 func Parse() *Arguments {
 	a := Arguments{}
 
-	flag.StringVar(&a.Host, "address", address, "kafka host")
+	flag.StringVar(&a.Host, "address", host, "kafka host")
 	flag.StringVar(&a.Port, "port", port, "kafka port")
 	flag.StringVar(&a.Topic, "topic", topic, "kafka topic")
 	flag.IntVar(&a.Partition, "partition", partition, "kafka partition")

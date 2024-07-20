@@ -1,42 +1,19 @@
 package main
 
 import (
-	"context"
 	"log"
-	"os"
+	"testkafka/internal/client/client"
+	"testkafka/internal/common/message"
+	args "testkafka/internal/server/argumentparser"
 	"time"
-
-	"github.com/segmentio/kafka-go"
 )
 
-const topic = "test-topic"
-const host = "localhost:29092"
-
 func main() {
-	log.SetOutput(os.Stdout)
-	
-	partition := 0
+	c := client.NewClient(args.Parse())
 
-	log.Println(host)
-	conn, err := kafka.DialLeader(context.Background(), "tcp", host, topic, partition)
+	m := message.NewMessage("Egor", "Egor2", "Hi, Egor2!")
 
-	if err != nil {
-		log.Fatal("failed to dial leader:", err)
-	}
-
-	conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
-
-	_, err = conn.WriteMessages(
-		kafka.Message{Value: []byte("one!")},
-		kafka.Message{Value: []byte("two!")},
-		kafka.Message{Value: []byte("three!")},
-	)
-
-	if err != nil {
-		log.Fatal("failed to write messages:", err)
-	}
-
-	if err := conn.Close(); err != nil {
-		log.Fatal("failed to close writer:", err)
+	if err := c.DoWithDeadline(m, time.Duration(10)*time.Second); err != nil {
+		log.Fatalln(err)
 	}
 }

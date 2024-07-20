@@ -28,13 +28,12 @@ func (s *Server) Run() error {
 	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 	batch := conn.ReadBatch(10e3, 1e6) // fetch 10KB min, 1MB max
 
-	b := make([]byte, 10e3) // 10KB max per message
 	for {
-		n, err := batch.Read(b)
+		n, err := batch.ReadMessage()
 		if err != nil {
 			break
 		}
-		fmt.Println(string(b[:n]))
+		fmt.Println(n.Value)
 	}
 
 	if err := batch.Close(); err != nil {
