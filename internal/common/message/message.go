@@ -1,11 +1,37 @@
 package message
 
-import "encoding/json"
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"reflect"
+
+	"github.com/go-faker/faker/v4"
+)
+
+const MaxLength = 10
+
+func init() {
+	_ = faker.AddProvider("bodyFaker", func(v reflect.Value) (interface{}, error) {
+		buff := bytes.Buffer{}
+
+		for i := 0; i < MaxLength; i++ {
+			if _, err := buff.WriteString(faker.Word()); err != nil {
+				return nil, err
+			}
+			if err := buff.WriteByte(' '); err != nil {
+				return nil, err
+			}
+		}
+
+		return buff.String(), nil
+	})
+}
 
 type Message struct {
-	From string `json:"from"`
-	To   string `json:"to"`
-	Body string `json:"body"`
+	From string `json:"from" faker:"name"`
+	To   string `json:"to" faker:"name"`
+	Body string `json:"body" faker:"bodyFaker"`
 }
 
 func NewMessage(from, to, body string) *Message {
@@ -24,4 +50,8 @@ func FromBytes(buff []byte) (*Message, error) {
 	}
 
 	return &m, nil
+}
+
+func (m *Message) String() string {
+	return fmt.Sprintf("{from:%s to:%s body:%s}", m.From, m.To, m.Body)
 }
