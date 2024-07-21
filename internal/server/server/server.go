@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"testkafka/internal/common/message"
 	args "testkafka/internal/server/argumentparser"
 	"time"
 
@@ -16,7 +17,7 @@ type Server struct {
 	ParsedArgs *args.Arguments
 	Timeout    time.Duration
 	mtx        sync.RWMutex
-	storage    []string
+	storage    []message.Message
 }
 
 func NewServer(parsedArgs *args.Arguments, timeout time.Duration) *Server {
@@ -39,8 +40,13 @@ func (s *Server) Run() error {
 			break
 		}
 
+		msg, err := message.FromBytes(m.Value)
+		if err != nil {
+			continue
+		}
+
 		s.mtx.Lock()
-		s.storage = append(s.storage, string(m.Value))
+		s.storage = append(s.storage, *msg)
 		s.mtx.Unlock()
 	}
 
@@ -50,9 +56,10 @@ func (s *Server) Run() error {
 func (s *Server) startServer() {
 	localServer := http.NewServeMux()
 	localServer.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		s.mtx.RLock()
-		if data, err :=  json.Marshal(s.storage); err == nil {
+		if data, err := json.Marshal(s.storage); err == nil {
 			w.Write(data)
 		}
 		s.mtx.RUnlock()
