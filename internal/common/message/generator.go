@@ -4,6 +4,7 @@ import (
 	"math/rand"
 
 	"github.com/go-faker/faker/v4"
+	"github.com/segmentio/kafka-go"
 )
 
 const (
@@ -81,12 +82,36 @@ func RandomIndex(l int) GetIndex {
 
 ///////////////////////////////////////////////////////////////////
 
-type MessageGen struct {
+type ValueGen struct {
 }
 
-func (m *MessageGen) Gen() []byte {
-	ms := Message{}
-	faker.FakeData(&ms)
-	bs, _ := ms.ToBytes()
+func NewValueGen() *ValueGen {
+	return &ValueGen{}
+}
+
+func (v *ValueGen) Gen() []byte {
+	msg := Message{}
+	faker.FakeData(&msg)
+	bs, _ := msg.ToBytes()
 	return bs
+}
+
+///////////////////////////////////////////////////////////////////
+
+type CreateMessage interface {
+	Create() *kafka.Message
+}
+
+type MessageGen struct {
+	*Generator
+}
+
+func NewMessageGen(g *Generator) *MessageGen {
+	return &MessageGen{g}
+}
+
+func (m *MessageGen) Create() *kafka.Message {
+	key := m.KeyGen()
+	value := m.ValueGen()
+	return &kafka.Message{Key: key, Value: value}
 }

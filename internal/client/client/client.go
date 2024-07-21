@@ -2,11 +2,12 @@ package client
 
 import (
 	"context"
+	"sync"
+	"sync/atomic"
 	msg "testkafka/internal/common/message"
 	args "testkafka/internal/server/argumentparser"
 	"time"
 
-	"github.com/go-faker/faker/v4"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -42,23 +43,26 @@ func (c *Client) Do(m *kafka.Message) error {
 	return c.DoWithDeadline(m, 0)
 }
 
-func (c *Client) DoWithFakerDeadline(count uint, waiting time.Duration) error {
-	m := &msg.Message{}
+func (c *Client) DoWithFakerDeadline(count uint, creator msg.CreateMessage, waiting time.Duration) error {
 	for i := uint(0); i < count; i++ {
-		faker.FakeData(m)
-		bs, err := m.ToBytes()
-		if err != nil {
-			return err
-		}
-		if err := c.DoWithDeadline(&kafka.Message{Value: bs}, waiting); err != nil {
+		if err := c.DoWithDeadline(creator.Create(), waiting); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (c *Client) DoWithFakerDeadlineParallel(count uint, waiting time.Duration) error {
+func (c *Client) DoWithFakerDeadlineParallel(count uint, creator msg.CreateMessage, waiting time.Duration) error {
 	ch := make(chan error, 1)
+	defer close(ch)
+
+	failed := atomic.Value{}
+	failed.Store(false)
+
+	mtx := sync.Mutex{}
+
+	wg := sync.WaitGroup{}
+	wg.Add(int(count))
 	for i := uint(0); i < count; i++ {
 		select {
 		case err := <-ch:
@@ -68,17 +72,21 @@ func (c *Client) DoWithFakerDeadlineParallel(count uint, waiting time.Duration) 
 		default:
 			{
 				go func() {
-					m := &msg.Message{}
-					faker.FakeData(m)
-					bs, err := m.ToBytes()
-					if err != nil {
-						ch <- err
-					} else if err := c.DoWithDeadline(&kafka.Message{Value: bs}, waiting); err != nil {
+					if err := c.DoWithDeadline(creator.Create(), waiting); err != nil {
+						mtx.Lock()
+						if failed.Load().(bool) {
+							mtx.Unlock()
+							return
+						}
+						failed.Store(true)
+						mtx.Unlock()
 						ch <- err
 					}
+					wg.Done()
 				}()
 			}
 		}
 	}
+	wg.Wait()
 	return nil
 }

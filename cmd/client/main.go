@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"testkafka/internal/client/client"
+	"testkafka/internal/common/message"
 	args "testkafka/internal/server/argumentparser"
 	"time"
 )
@@ -10,7 +11,14 @@ import (
 func main() {
 	c := client.NewClient(args.Parse())
 
-	if err := c.DoWithFakerDeadline(10, time.Duration(10)*time.Second); err != nil {
+	gen := message.NewMessageGen(
+		message.NewGenerator(
+			message.NewKeyGenFromList([]string{"common", "personal"}, message.RandomIndex(2)).Gen,
+			message.NewValueGen().Gen,
+		),
+	)
+
+	if err := c.DoWithFakerDeadlineParallel(10, gen, time.Duration(10)*time.Second); err != nil {
 		log.Fatalln(err)
 	}
 }
