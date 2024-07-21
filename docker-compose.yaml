@@ -45,22 +45,23 @@ services:
       kafka-topics --bootstrap-server kafka:9092 --list
       "
 
-  # client:
-  #   build:
-  #     context: .
-  #     dockerfile: dockerfile.app
-  #     args:
-  #       APP_TYPE: "client"
-  #   container_name: client
-  #   depends_on:
-  #     kafka:
-  #       condition: service_started
-  #     init-kafka:
-  #       condition: service_completed_successfully
-  #   environment:
-  #     - $TOPIC
-  #   ports:
-  #     - 8081:8081
+  client:
+    build:
+      context: .
+      dockerfile: dockerfile.app
+      args:
+        APP_TYPE: "client"
+    container_name: client
+    depends_on:
+      init-kafka:
+        condition: service_completed_successfully
+    environment:
+      - topic=$TOPIC
+      - host=$HOST
+      - port=$PORT
+      - count=10
+      - duration=10
+      - repeat=false
 
   # server:
   #   build:

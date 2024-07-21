@@ -9,16 +9,29 @@ import (
 )
 
 func main() {
-	c := client.NewClient(args.Parse())
+	parsed := args.Parse()
+	c := client.NewClient(parsed)
 
 	gen := message.NewMessageGen(
 		message.NewGenerator(
-			message.NewKeyGenFromList([]string{"common", "personal"}, message.RandomIndex(2)).Gen,
+			message.NewKeyGenFromList(
+				[]string{"common", "personal"},
+				message.RandomIndex(2),
+			).Gen,
 			message.NewValueGen().Gen,
 		),
 	)
 
-	if err := c.DoWithFakerDeadlineParallel(10, gen, time.Duration(10)*time.Second); err != nil {
-		log.Fatalln(err)
+	for {
+		if err := c.DoWithFakerDeadlineParallel(
+			uint(parsed.CountMessage),
+			gen,
+			time.Duration(parsed.Waiting)*time.Second,
+		); err != nil {
+			log.Fatalln(err)
+		}
+		if !parsed.Repeat {
+			break
+		}
 	}
 }
