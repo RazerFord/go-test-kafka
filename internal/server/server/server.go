@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"log"
 	args "testkafka/internal/server/argumentparser"
 	"time"
 
@@ -19,10 +18,9 @@ func NewServer(parsedArgs *args.Arguments) *Server {
 }
 
 func (s *Server) Run() error {
-	log.Println(s)
 	conn, err := kafka.DialLeader(context.Background(), "tcp", s.ParsedArgs.Address(), s.ParsedArgs.Topic, s.ParsedArgs.Partition)
 	if err != nil {
-		log.Fatal("failed to dial leader:", err)
+		return err
 	}
 
 	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
@@ -33,15 +31,15 @@ func (s *Server) Run() error {
 		if err != nil {
 			break
 		}
-		fmt.Println(n.Value)
+		fmt.Println(string(n.Value))
 	}
 
 	if err := batch.Close(); err != nil {
-		log.Fatal("failed to close batch:", err)
+		return err
 	}
 
 	if err := conn.Close(); err != nil {
-		log.Fatal("failed to close connection:", err)
+		return err
 	}
 
 	return nil
