@@ -59,8 +59,6 @@ func (c *Client) DoWithFakerDeadlineParallel(count uint, creator msg.CreateMessa
 	failed := atomic.Value{}
 	failed.Store(false)
 
-	mtx := sync.Mutex{}
-
 	wg := sync.WaitGroup{}
 	wg.Add(int(count))
 	for i := uint(0); i < count; i++ {
@@ -73,14 +71,9 @@ func (c *Client) DoWithFakerDeadlineParallel(count uint, creator msg.CreateMessa
 			{
 				go func() {
 					if err := c.DoWithDeadline(creator.Create(), waiting); err != nil {
-						mtx.Lock()
-						if failed.Load().(bool) {
-							mtx.Unlock()
-							return
+						if failed.CompareAndSwap(false, true) {
+							ch <- err
 						}
-						failed.Store(true)
-						mtx.Unlock()
-						ch <- err
 					}
 					wg.Done()
 				}()
@@ -88,5 +81,14 @@ func (c *Client) DoWithFakerDeadlineParallel(count uint, creator msg.CreateMessa
 		}
 	}
 	wg.Wait()
-	return nil
+	select {
+	case err := <-ch:
+		{
+			return err
+		}
+	default:
+		{
+			return nil
+		}
+	}
 }
