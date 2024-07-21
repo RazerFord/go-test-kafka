@@ -55,3 +55,4 @@ func FromBytes(buff []byte) (*Message, error) {
 func (m *Message) String() string {
 	return fmt.Sprintf("{from:%s to:%s body:%s}", m.From, m.To, m.Body)
 }
+

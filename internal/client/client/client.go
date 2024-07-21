@@ -18,7 +18,7 @@ func NewClient(parsedArgs *args.Arguments) *Client {
 	return &Client{ParsedArgs: parsedArgs}
 }
 
-func (c *Client) DoWithDeadline(m *msg.Message, waiting time.Duration) error {
+func (c *Client) DoWithDeadline(m *kafka.Message, waiting time.Duration) error {
 	conn, err := kafka.DialLeader(context.Background(), "tcp", c.ParsedArgs.Address(), c.ParsedArgs.Topic, c.ParsedArgs.Partition)
 	if err != nil {
 		return err
@@ -26,12 +26,7 @@ func (c *Client) DoWithDeadline(m *msg.Message, waiting time.Duration) error {
 
 	conn.SetWriteDeadline(time.Now().Add(waiting))
 
-	bs, err := m.ToBytes()
-	if err != nil {
-		return err
-	}
-
-	_, err = conn.WriteMessages(kafka.Message{Value: bs})
+	_, err = conn.WriteMessages(*m)
 	if err != nil {
 		return err
 	}
@@ -43,7 +38,7 @@ func (c *Client) DoWithDeadline(m *msg.Message, waiting time.Duration) error {
 	return nil
 }
 
-func (c *Client) Do(m *msg.Message) error {
+func (c *Client) Do(m *kafka.Message) error {
 	return c.DoWithDeadline(m, 0)
 }
 
@@ -51,7 +46,11 @@ func (c *Client) DoWithFakerDeadline(count uint, waiting time.Duration) error {
 	m := &msg.Message{}
 	for i := uint(0); i < count; i++ {
 		faker.FakeData(m)
-		if err := c.DoWithDeadline(m, waiting); err != nil {
+		bs, err := m.ToBytes()
+		if err != nil {
+			return err
+		}
+		if err := c.DoWithDeadline(&kafka.Message{Value: bs}, waiting); err != nil {
 			return err
 		}
 	}
@@ -71,7 +70,10 @@ func (c *Client) DoWithFakerDeadlineParallel(count uint, waiting time.Duration) 
 				go func() {
 					m := &msg.Message{}
 					faker.FakeData(m)
-					if err := c.DoWithDeadline(m, waiting); err != nil {
+					bs, err := m.ToBytes()
+					if err != nil {
+						ch <- err
+					} else if err := c.DoWithDeadline(&kafka.Message{Value: bs}, waiting); err != nil {
 						ch <- err
 					}
 				}()
