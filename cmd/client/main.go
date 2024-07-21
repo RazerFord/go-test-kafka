@@ -33,5 +33,6 @@ func main() {
 		if !parsed.Repeat {
 			break
 		}
+		time.Sleep(time.Duration(parsed.Sleep) * time.Second)
 	}
 }

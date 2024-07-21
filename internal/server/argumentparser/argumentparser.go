@@ -15,6 +15,7 @@ type Arguments struct {
 	Partition    int
 	CountMessage int
 	Waiting      int
+	Sleep        int
 	Repeat       bool
 }
 
@@ -26,6 +27,7 @@ const (
 	partition    = 0
 	countMessage = 10
 	waiting      = 10
+	sleep        = 10
 	repeat       = false
 )
 
@@ -65,6 +67,11 @@ func Parse() *Arguments {
 	flag.IntVar(&a.Waiting, "duration", waiting, "message sending time")
 	if s, r := os.LookupEnv("duration"); r {
 		a.Waiting, _ = strconv.Atoi(s)
+	}
+
+	flag.IntVar(&a.Sleep, "sleep", sleep, "sleep after sending messages")
+	if s, r := os.LookupEnv("sleep"); r {
+		a.Sleep, _ = strconv.Atoi(s)
 	}
 
 	flag.BoolVar(&a.Repeat, "repeat", repeat, "resend")

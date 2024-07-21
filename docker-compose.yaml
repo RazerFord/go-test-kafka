@@ -82,6 +82,7 @@ services:
       - host=$HOST
       - port=$PORT
       - server=8081
+      - sleep=10
     ports:
       - 8081:8081
 
