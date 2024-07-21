@@ -33,7 +33,15 @@ func (s *Server) Run() error {
 	})
 
 	for {
-		ctx, cancel := context.WithTimeout(context.Background(), s.Timeout)
+		var ctx context.Context
+		var cancel func()
+
+		if s.Timeout != 0 {
+			ctx, cancel = context.WithTimeout(context.Background(), s.Timeout)
+		} else {
+			ctx, cancel = context.Background(), func() {}
+		}
+
 		m, err := r.ReadMessage(ctx)
 		cancel()
 		if err != nil {

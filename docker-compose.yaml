@@ -63,22 +63,25 @@ services:
       - duration=10
       - repeat=false
 
-  # server:
-  #   build:
-  #     context: .
-  #     dockerfile: dockerfile.app
-  #     args:
-  #       APP_TYPE: "server"
-  #   container_name: server
-  #   depends_on:
-  #     kafka:
-  #       condition: service_started
-  #     init-kafka:
-  #       condition: service_completed_successfully
-  #     client:
-  #       condition: service_started
-  #   environment:
-  #     - $TOPIC
-  #   ports:
-  #     - 8082:8082
+  server:
+    build:
+      context: .
+      dockerfile: dockerfile.app
+      args:
+        APP_TYPE: "server"
+    container_name: server
+    depends_on:
+      kafka:
+        condition: service_started
+      init-kafka:
+        condition: service_completed_successfully
+      client:
+        condition: service_started
+    environment:
+      - topic=$TOPIC
+      - host=$HOST
+      - port=$PORT
+      - server=8081
+    ports:
+      - 8081:8081
 
