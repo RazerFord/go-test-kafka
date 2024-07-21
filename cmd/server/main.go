@@ -4,10 +4,11 @@ import (
 	"log"
 	args "testkafka/internal/server/argumentparser"
 	"testkafka/internal/server/server"
+	"time"
 )
 
 func main() {
-	s := server.NewServer(args.Parse())
+	s := server.NewServer(args.Parse(), 10*time.Second)
 	if err := s.Run(); err != nil {
 		log.Fatalln(err)
 	}

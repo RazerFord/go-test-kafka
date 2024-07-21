@@ -20,23 +20,17 @@ func NewClient(parsedArgs *args.Arguments) *Client {
 }
 
 func (c *Client) DoWithDeadline(m *kafka.Message, waiting time.Duration) error {
-	conn, err := kafka.DialLeader(context.Background(), "tcp", c.ParsedArgs.Address(), c.ParsedArgs.Topic, c.ParsedArgs.Partition)
-	if err != nil {
+	w := &kafka.Writer{
+		Addr:     kafka.TCP(c.ParsedArgs.Address()),
+		Topic:    c.ParsedArgs.Topic,
+		Balancer: &kafka.LeastBytes{},
+	}
+
+	if err := w.WriteMessages(context.Background(), *m); err != nil {
 		return err
 	}
 
-	conn.SetWriteDeadline(time.Now().Add(waiting))
-
-	_, err = conn.WriteMessages(*m)
-	if err != nil {
-		return err
-	}
-
-	if err := conn.Close(); err != nil {
-		return err
-	}
-
-	return nil
+	return w.Close()
 }
 
 func (c *Client) Do(m *kafka.Message) error {

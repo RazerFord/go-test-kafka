@@ -2,7 +2,10 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"sync"
 	args "testkafka/internal/server/argumentparser"
 	"time"
 
@@ -11,36 +14,48 @@ import (
 
 type Server struct {
 	ParsedArgs *args.Arguments
+	Timeout    time.Duration
+	mtx        sync.RWMutex
+	storage    []string
 }
 
-func NewServer(parsedArgs *args.Arguments) *Server {
-	return &Server{ParsedArgs: parsedArgs}
+func NewServer(parsedArgs *args.Arguments, timeout time.Duration) *Server {
+	return &Server{ParsedArgs: parsedArgs, Timeout: timeout}
 }
 
 func (s *Server) Run() error {
-	conn, err := kafka.DialLeader(context.Background(), "tcp", s.ParsedArgs.Address(), s.ParsedArgs.Topic, s.ParsedArgs.Partition)
-	if err != nil {
-		return err
-	}
+	go s.startServer()
 
-	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
-	batch := conn.ReadBatch(10e3, 1e6) // fetch 10KB min, 1MB max
+	r := kafka.NewReader(kafka.ReaderConfig{
+		Brokers: []string{s.ParsedArgs.Address()},
+		Topic:   s.ParsedArgs.Topic,
+	})
 
 	for {
-		n, err := batch.ReadMessage()
+		ctx, cancel := context.WithTimeout(context.Background(), s.Timeout)
+		m, err := r.ReadMessage(ctx)
+		cancel()
 		if err != nil {
 			break
 		}
-		fmt.Println(string(n.Value))
+
+		s.mtx.Lock()
+		s.storage = append(s.storage, string(m.Value))
+		s.mtx.Unlock()
 	}
 
-	if err := batch.Close(); err != nil {
-		return err
-	}
+	return r.Close()
+}
 
-	if err := conn.Close(); err != nil {
-		return err
-	}
-
-	return nil
+func (s *Server) startServer() {
+	localServer := http.NewServeMux()
+	localServer.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		s.mtx.RLock()
+		if data, err :=  json.Marshal(s.storage); err == nil {
+			w.Write(data)
+		}
+		s.mtx.RUnlock()
+	})
+	http.ListenAndServe(fmt.Sprintf(":%s", s.ParsedArgs.ServerPort), localServer)
 }

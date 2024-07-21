@@ -6,17 +6,19 @@ import (
 )
 
 type Arguments struct {
-	Host      string
-	Port      string
-	Topic     string
-	Partition int
+	Host       string
+	Port       string
+	Topic      string
+	ServerPort string
+	Partition  int
 }
 
 const (
-	host      = "localhost"
-	port      = "29092"
-	topic     = "test-topic"
-	partition = 0
+	host       = "localhost"
+	port       = "29092"
+	topic      = "test-topic"
+	serverPort = "8081"
+	partition  = 0
 )
 
 func Parse() *Arguments {
@@ -26,6 +28,8 @@ func Parse() *Arguments {
 	flag.StringVar(&a.Port, "port", port, "kafka port")
 	flag.StringVar(&a.Topic, "topic", topic, "kafka topic")
 	flag.IntVar(&a.Partition, "partition", partition, "kafka partition")
+	flag.StringVar(&a.ServerPort, "server", serverPort, "server port")
+	
 	flag.Parse()
 
 	return &a
