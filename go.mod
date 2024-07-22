@@ -11,4 +11,5 @@ require (
 	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
 	golang.org/x/text v0.15.0 // indirect
+	google.golang.org/protobuf v1.34.2 // indirect
 )
