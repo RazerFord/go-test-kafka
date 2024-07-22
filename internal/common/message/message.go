@@ -2,11 +2,12 @@ package message
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"reflect"
+	"testkafka/generated/messageproto"
 
 	"github.com/go-faker/faker/v4"
+	"google.golang.org/protobuf/proto"
 )
 
 const MaxLength = 10
@@ -44,17 +45,17 @@ func NewMessage(from, to, body string) *Message {
 }
 
 func (m *Message) ToBytes() ([]byte, error) {
-	return json.Marshal(m)
+	return proto.Marshal(&messageproto.Message{From: m.From, To: m.To, Body: m.Body})
 }
 
 func FromBytes(buff []byte) (*Message, error) {
-	m := Message{}
+	m := messageproto.Message{}
 
-	if err := json.Unmarshal(buff, &m); err != nil {
+	if err := proto.Unmarshal(buff, &m); err != nil {
 		return nil, err
 	}
 
-	return &m, nil
+	return &Message{From: m.From, To: m.To, Body: m.Body}, nil
 }
 
 func (m *Message) String() string {
