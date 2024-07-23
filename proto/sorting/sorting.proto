@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package sorting;
+option go_package = "generated/sortingroto";
+
+service Sorter {
+  rpc Sort(Request) returns (Response) {}
+}
+
+message Response {
+  repeated int32 data = 1;
+}
+
+message Request {
+  repeated int32 data = 1;
+}
